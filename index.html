@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>DÜNYAYI ETKİLEYEN 100 İNSAN</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dünyayı Etkileyen 100 İnsan Atlası</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { 
+            --war-red: #8b0000; 
+            --steel-gray: #2f4f4f; 
+            --dark-bg: #1a1a1a; 
+            --paper-light: #f4f1ea; 
+            --gold-accent: #d4af37;
+        }
+        body { margin: 0; display: flex; height: 100vh; font-family: 'Georgia', serif; background: var(--paper-light); }
+        #map { flex: 1; height: 100%; }
+        #info-panel { 
+            width: 450px; padding: 0; background: white; display: flex; 
+            flex-direction: column; box-shadow: -5px 0 15px rgba(0,0,0,0.3); z-index: 1000;
+        }
+        .header { background: var(--steel-gray); color: var(--gold-accent); padding: 20px; text-align: center; border-bottom: 3px solid var(--war-red); }
+        .header h1 { margin: 0; font-size: 18px; letter-spacing: 1px; text-transform: uppercase; }
+        .search-area { padding: 15px; border-bottom: 1px solid #ddd; background: #eee; }
+        select { 
+            width: 100%; padding: 12px; border-radius: 4px; border: 2px solid var(--steel-gray);
+            font-size: 14px; outline: none; background: white;
+        }
+        #wiki-content { padding: 20px; overflow-y: auto; flex: 1; background: #fff; }
+        #wiki-img { width: 100%; border-radius: 4px; display: none; margin-bottom: 15px; border: 2px solid var(--war-red); object-fit: contain; max-height: 200px; }
+        #wiki-title { margin-top: 0; color: var(--war-red); font-size: 22px; border-bottom: 2px solid var(--gold-accent); padding-bottom: 10px; }
+        #wiki-text { line-height: 1.7; color: #333; font-size: 15px; text-align: justify; }
+        .source-link { 
+            display: inline-block; margin-top: 15px; padding: 8px 15px; 
+            background: var(--war-red); color: white; text-decoration: none; 
+            border-radius: 4px; font-weight: bold; font-size: 13px;
+        }
+        @media (max-width: 900px) {
+            body { flex-direction: column; }
+            #map { height: 40vh; width: 100%; }
+            #info-panel { width: 100%; height: 60vh; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="info-panel">
+        <div class="header">
+            <h1>DÜNYAYI ETKİLEYEN 100 İNSAN</h1>
+        </div>
+        <div class="search-area">
+            <select id="personSelect">
+                <option value="">Bir Kişi Seçin</option>
+            </select>
+        </div>
+        <div id="wiki-content">
+            <h2 id="wiki-title">Hoş Geldiniz</h2>
+            <img id="wiki-img" src="" alt="Kişi Görseli" />
+            <div id="wiki-text">Haritadan bir işaretçiye tıklayarak ya da listeden bir kişi seçerek detayları görebilirsiniz.</div>
+            <a id="wiki-link" href="#" target="_blank" class="source-link" style="display:none;">Detaylı Bilgi (Wikipedia)</a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const insanlar = [
+           // (İnsanlar dizisi aynı şekilde buraya gelecek, kodunuzdaki gibi)
+          {
+                   name: "Hz. Muhammed(s.a.v.)",
+        lat: 21.4225, // Mekke
+        lng: 39.8262,
+        wiki: "Muhammed",
+        yasam: "y. 570–632",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Arap",
+        hakkinda: "Politik ve dinî liderdi. Müslümanlarca Allah'ın peygamberi ve son elçisidir. İslam'ın kurucusu ve merkezî figürüdür."
+    },
+    {
+        name: "Sir Isaac Newton",
+        lat: 52.9900, // Grantham/Cambridge (İngiltere)
+        lng: -0.6300,
+        wiki: "Isaac_Newton",
+        yasam: "1643–1727",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Bilim insanı, matematikçi, fizikçi. Evrensel kütleçekim yasası ve üç hareket yasasıyla klasik fizik mekaniğinin temelini attı."
+    },
+    {
+        name: "Nasıralı İsa / Hz. İsa",
+        lat: 31.7719, // Kudüs
+        lng: 35.2170,
+        wiki: "İsa",
+        yasam: "y. MÖ 4–MS 30/33",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Dinî ve ruhani liderdi. Hristiyanlığın merkezî figürüdür. Hristiyanlar tarafından Mesih, Tanrı'nın oğlu olarak kabul edilir. Müslümanlar için peygamberdir."
+    },
+    {
+        name: "Buda",
+        lat: 27.6253, // Lumbini (Nepal)
+        lng: 83.2754,
+        wiki: "Buda",
+        yasam: "MÖ 563–483",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Hint",
+        hakkinda: "Budizm'in kurucusu olan bir filozoftu. Eski dönemin Hindistan'ında ruhani bir önder ve öğretmendi."
+    },
+    {
+        name: "Konfüçyüs",
+        lat: 35.6068, // Qufu (Çin)
+        lng: 116.9740,
+        wiki: "Konfüçyüs",
+        yasam: "MÖ 551–479",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Düşüncesi ve öğretileriyle Konfüçyüsçülüğün kurucusu olan bir filozoftu. Asya ülkeleri üzerinde derin bir iz bırakmıştır."
+    },
+    {
+        name: "Aziz Pavlus (Tarsuslu Saul)",
+        lat: 36.9189, // Tarsus, Mersin
+        lng: 34.8988,
+        wiki: "Pavlus",
+        yasam: "MS 5–67",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Havari ve ilk Hristiyan misyonerdi. İsa'nın öğretilerini yayarak Hristiyanlık inancının temellerini atmıştır."
+    },
+    {
+        name: "Cai Lun",
+        lat: 34.2000, // Çin (Tahmini merkez)
+        lng: 108.9000,
+        wiki: "Cai_Lun",
+        yasam: "y. MS 50–121",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Bilgiyi depolama yolunda ihtiyaç duyulan en temel materyal olan kâğıdı icat ederek büyük bir etki yaratmış mucitti."
+    },
+    {
+        name: "Johannes Gutenberg",
+        lat: 49.9929, // Mainz, Almanya
+        lng: 8.2721,
+        wiki: "Johannes_Gutenberg",
+        yasam: "y. 1400–1468",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Mekanik matbaayı yaratarak bilginin daha hızlı yayılmasına yol açmış bir mucitti. Rönesans ve Aydınlanma Çağı'nın gerçekleşmesini hızlandırmıştır."
+    },
+    {
+        name: "Kristof Kolomb",
+        lat: 39.8800, // İspanya, Palos de la Frontera (Yolculuk başlangıcı)
+        lng: -6.8900,
+        wiki: "Kristof_Kolomb",
+        yasam: "1451–1506",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Amerika kıtasını keşfetmelerini sağlayarak Coğrafi Keşifler döneminin en büyük keşfini gerçekleştirmiş olan gezgin, sömürgeci ve kâşifti."
+    },
+    {
+        name: "Albert Einstein",
+        lat: 40.3500, // Princeton, New Jersey (Kariyerinin sonu)
+        lng: -74.6600,
+        wiki: "Albert_Einstein",
+        yasam: "1879–1955",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Görelilik teorisi ve beraberinde getirdiği kütle–enerji eşdeğerliği olan $E = mc^2$ denklemi ile bilim ve fizik dünyasını derinden etkiledi."
+    },
+    {
+        name: "Louis Pasteur",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "Louis_Pasteur",
+        yasam: "1822–1895",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Tarihin en ölümcül hastalıklarından biri olan kuduzun tedavisi için kuduz aşısını bulmuş bir mikrobiyolog ve kimyagerdi."
+    },
+    {
+        name: "Galileo Galilei",
+        lat: 43.7171, // Pisa/Floransa, İtalya
+        lng: 10.3957,
+        wiki: "Galileo_Galilei",
+        yasam: "1564–1642",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Gözlemsel astronomi alanında yenilikler ile Rönesans dönemi bilimsel devrimlerine damga vurmuş bir bilim insanıydı."
+    },
+    {
+        name: "Aristoteles (Aristo)",
+        lat: 37.9715, // Atina, Yunanistan
+        lng: 23.7257,
+        wiki: "Aristoteles",
+        yasam: "MÖ 384–322",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yunan",
+        hakkinda: "Batı felsefesine teorik düşünceyi katmasıyla, özellikle de üzerine yoğunlaştığı mantık alanına kattığı önemli kazanımlarla tanınmış bir filozoftu."
+    },
+    {
+        name: "Öklid",
+        lat: 31.2000, // İskenderiye, Mısır
+        lng: 29.9167,
+        wiki: "Öklid",
+        yasam: "y. MÖ 323–285",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yunan",
+        hakkinda: "Elementler eserinde derlediği geometrik çalışmalarıyla aksiyomatik yöntemi geliştirerek geometriye olan bakış açısını kökten değiştirmiş bir matematikçiydi."
+    },
+    {
+        name: "Hz. Musa",
+        lat: 29.5000, // Sina Yarımadası (Tahmini konum)
+        lng: 33.9000,
+        wiki: "Musa",
+        yasam: "MÖ 13. yüzyıl",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İbrani",
+        hakkinda: "İsrailoğullarını politik, dinî ve hukuki yönden yönetmiş; koyduğu yasalar ile Yahudilik dışında Hristiyanlık ve İslam'ı da derinden etkilemiş bir din büyüğüydü."
+    },
+    {
+        name: "Charles Darwin",
+        lat: 52.6100, // İngiltere
+        lng: -2.7500,
+        wiki: "Charles_Darwin",
+        yasam: "1809–1882",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Türlerin Kökeni kitabıyla evrimsel biyolojinin ve kendi adıyla anılan Darwinizm kuramının temelini oluşturmuş bir biyolog ve doğa bilimciydi."
+    },
+    {
+        name: "Çin Şi Huang",
+        lat: 34.3853, // Xi'an, Çin
+        lng: 108.8252,
+        wiki: "Çin_Şi_Huang",
+        yasam: "MÖ 247–210",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Çin Seddi'ni yaptırtmış ve kurduğu Çin Hanedanlığı ile günümüzde Çin adı verilen bölgeye adını vermiş ilk Çin imparatoruydu."
+    },
+    {
+        name: "Augustus",
+        lat: 41.8902, // Roma, İtalya
+        lng: 12.4922,
+        wiki: "Augustus",
+        yasam: "MÖ 63–MS 14",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Latin",
+        hakkinda: "Roma İmparatorluğu'nu kurmuş ve ilk imparatoru olup 'ceasar' ünvanını almıştı."
+    },
+    {
+        name: "Nicolaus Copernicus",
+        lat: 53.0100, // Torun, Polonya
+        lng: 18.6000,
+        wiki: "Nicolaus_Copernicus",
+        yasam: "1473–1543",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Polonyalı",
+        hakkinda: "Güneş Sistemi'nin günümüzdekine çok benzer bir betimlemesini yapmış matematikçi ve astronomdu."
+    },
+    {
+        name: "Antoine Lavoisier",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "Antoine_Lavoisier",
+        yasam: "1743–1794",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Kütlenin korunumu kanununu ortaya atmasıyla modern kimya bilimini yaratmış kimyager ve simyagerdi."
+    },
+    {
+        name: "Büyük Konstantin",
+        lat: 41.0082, // İstanbul, Türkiye (Konstantinopolis)
+        lng: 28.9784,
+        wiki: "I._Konstantin",
+        yasam: "272–337",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Latin",
+        hakkinda: "Roma İmparatorluğu'nun doğu bloğunu birleştirmiş ve Konstantinopolis şehrinin isim babası olmuştu. Hristiyanlığa geçen ilk Roma imparatorudur."
+    },
+    {
+        name: "James Watt",
+        lat: 55.8500, // Glasgow, İskoçya
+        lng: -4.2500,
+        wiki: "James_Watt",
+        yasam: "1736–1819",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İskoç",
+        hakkinda: "İlk buhar makinesini yarattı. Watt'ın buhar makineleri, Sanayi Devrimi'ni başlatacak kadar büyük bir etki yarattı."
+    },
+    {
+        name: "Michael Faraday",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Michael_Faraday",
+        yasam: "1791–1867",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Elektromanyetik indüklemeyi ve manyetik alanın ışığın kutuplanma düzlemini döndürdüğünü keşfederek elektrolizin temel ilkelerini belirleyen bilim insanıydı."
+    },
+    {
+        name: "James Clerk Maxwell",
+        lat: 55.9533, // Edinburgh, İskoçya
+        lng: -3.1883,
+        wiki: "James_Clerk_Maxwell",
+        yasam: "1831–1879",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İskoç",
+        hakkinda: "Klasik elektromanyetik teorisinde elektrik ve manyetizmanın aynı şey olduğunu, kendisine ait olan Maxwell Denklemleri ile ispatlaması en önemli başarısıdır."
+    },
+    {
+        name: "Martin Luther",
+        lat: 51.4938, // Wittenberg, Almanya
+        lng: 12.6469,
+        wiki: "Martin_Luther",
+        yasam: "1483–1546",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Keşiş, teolog ve Protestanlığın babasıydı. Avrupa'daki reform hareketlerinin öncü ismi olmuştur."
+    },
+    {
+        name: "George Washington",
+        lat: 38.8951, // Washington D.C., ABD
+        lng: -77.0369,
+        wiki: "George_Washington",
+        yasam: "1732–1799",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "ABD'nin bağımsızlık savaşında önemli bir rol oynayarak Amerika Birleşik Devletleri'nin birinci başkanı oldu."
+    },
+    {
+        name: "Karl Marx",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Karl_Marx",
+        yasam: "1818–1883",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Filozof, politik ekonomist ve bilimsel sosyalizmin kurucusuydu. Ekonomi alanındaki çalışmaları, emek–sermaye ilişkisini kavramanın temelini oluşturdu."
+    },
+    {
+        name: "Wright Kardeşler (Wilbur & Orville Wright)",
+        lat: 39.8800, // Dayton, Ohio, ABD
+        lng: -84.1800,
+        wiki: "Wright_Kardeşler",
+        yasam: "1867–1912 & 1871–1948",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz ve Alman",
+        hakkinda: "Tarihte ilk defa motorlu uçak uçuran mucit kardeşlerdi."
+    },
+    {
+        name: "Cengiz Han (Temuçin)",
+        lat: 47.9190, // Ulan Bator (Moğolistan)
+        lng: 106.9180,
+        wiki: "Cengiz_Han",
+        yasam: "1162–1227",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Moğol",
+        hakkinda: "Moğol İmparatorluğu'nun kurucusu ve ilk imparatoru olan komutan ve hükümdardı. İnsanlık tarihinin gördüğü bitişik sınırlara sahip en büyük imparatorluğunu kurmuştur."
+    },
+    {
+        name: "Adam Smith",
+        lat: 55.9533, // Edinburgh, İskoçya
+        lng: -3.1883,
+        wiki: "Adam_Smith",
+        yasam: "1723–1790",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İskoç",
+        hakkinda: "Ekonominin Babası ve Kapitalizmin Babası olarak da anılan ekonomist, ahlak filozofu ve İskoç Aydınlanması sırasındaki önemli bir figürdü."
+    },
+    {
+        name: "William Shakespeare",
+        lat: 52.1934, // Stratford-upon-Avon, İngiltere
+        lng: -1.7042,
+        wiki: "William_Shakespeare",
+        yasam: "1564–1616",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Şair, oyun yazarı ve oyuncuydu. Çoklukla İngilizce dilinin en büyük yazarı ve dünyanın en iyi dram oyun yazarı olarak anılır."
+    },
+    {
+        name: "John Dalton",
+        lat: 53.4808, // Manchester, İngiltere
+        lng: -2.2426,
+        wiki: "John_Dalton",
+        yasam: "1766–1844",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Kimyager, meteorolog ve fizikçiydi. Modern Atom Teorisi ile ilgili öncü çalışmaları ve renk körlüğü üzerine araştırmalarıyla bilinir."
+    },
+    {
+        name: "Büyük İskender",
+        lat: 40.6401, // Pella, Yunanistan
+        lng: 22.5204,
+        wiki: "Büyük_İskender",
+        yasam: "MÖ 356–323",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Makedon",
+        hakkinda: "Antik Makedonya Krallığı'nın kralıydı. Yunanistan'dan Kuzeybatı Hindistan'a kadar uzanan antik dünyanın en büyük imparatorluklarından birini yarattı."
+    },
+    {
+        name: "Napolyon Bonaparte",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "Napolyon_Bonaparte",
+        yasam: "1769–1821",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Fransız Devrim Savaşları ve Napolyon Savaşları sırasında Fransa'nın krallığını yapmış asker ve devlet adamıydı. Napolyon Kanunları'nı yaratarak dünyada ses getirmiştir."
+    },
+    {
+        name: "Thomas Edison",
+        lat: 40.7128, // New York, ABD
+        lng: -74.0060,
+        wiki: "Thomas_Edison",
+        yasam: "1847–1931",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Hollandalı",
+        hakkinda: "Mucit ve iş insanıydı. Fonograf, film kamerası, ampulün ilk versiyonları gibi icatları, sanayileşmiş olan modern dünyada büyük etki yarattı."
+    },
+    {
+        name: "Antonie van Leeuwenhoek",
+        lat: 52.0917, // Delft, Hollanda
+        lng: 4.3970,
+        wiki: "Antonie_van_Leeuwenhoek",
+        yasam: "1632–1723",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Hollandalı",
+        hakkinda: "Bakteriyi ilk keşfeden ve kendi oluşturduğu mikroskobu ile mikroskobik canlıları ilk inceleyen bilim insanıdır."
+    },
+    {
+        name: "William T. G. Morton",
+        lat: 42.3601, // Boston, Massachusetts, ABD
+        lng: -71.0589,
+        wiki: "William_T._G._Morton",
+        yasam: "1819–1868",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Modern tıp dünyasını anesteziyle tanıştıran tıp insanıydı. 1846'da eter kullanarak neredeyse ağrısız ilk diş çekimini gerçekleştirmiştir."
+    },
+    {
+        name: "Guglielmo Marconi",
+        lat: 44.5042, // Bologna, İtalya
+        lng: 11.3362,
+        wiki: "Guglielmo_Marconi",
+        yasam: "1874–1937",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Mucit ve elektrik mühendisiydi. Uzun mesafeli radyo iletişimi, telsiz–telgraf sistemi üzerine yaptığı çalışmalarıyla ünlüdür. Radyonun mucidi olarak da bilinir."
+    },
+    {
+        name: "Adolf Hitler",
+        lat: 48.1351, // Münih, Almanya
+        lng: 11.5820,
+        wiki: "Adolf_Hitler",
+        yasam: "1889–1945",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Politikacı ve Nasyonal Sosyalist Alman İşçi Partisi lideriydi. II. Dünya Savaşı'nı başlatmış ve Holokost adı verilen tarihin en büyük soykırımıyla milyonlarca insanın ölümüne neden olmuştur."
+    },
+    {
+        name: "Platon (Eflatun)",
+        lat: 37.9715, // Atina, Yunanistan
+        lng: 23.7257,
+        wiki: "Platon",
+        yasam: "MÖ 428/427–348",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yunan",
+        hakkinda: "Filozof ve bilgeydi. Dünyada üniversite düzeyindeki ilk kurumlardan biri olan Akademi'nin kurucusuydu. Felsefe ve bilim tarihindeki pek çok tartışmanın temellerini atmıştır."
+    },
+    {
+        name: "Oliver Cromwell",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Oliver_Cromwell",
+        yasam: "1599–1658",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Siyaset adamı, asker ve devlet yöneticisiydi. İngiltere'nin yönetim biçimini krallıktan cumhuriyete çevirmiş, ama 'Devlet Koruyucu Lord' ünvanıyla ülkeyi tek başına idare etmiştir."
+    },
+    {
+        name: "Alexander Graham Bell",
+        lat: 55.9533, // Edinburgh, İskoçya
+        lng: -3.1883,
+        wiki: "Alexander_Graham_Bell",
+        yasam: "1847–1922",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İskoç",
+        hakkinda: "Bilim insanı ve mucitti. Telefonun mucidi olarak tanınır."
+    },
+    {
+        name: "Alexander Fleming",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Alexander_Fleming",
+        yasam: "1881–1955",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İskoç",
+        hakkinda: "Bakteriyolog ve tıp insanıydı. Antibiyotik bir madde olan penisilini bulan kişidir."
+    },
+    {
+        name: "John Locke",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "John_Locke",
+        yasam: "1632–1704",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Klasik liberal düşüncenin öncüsü olan filozoftu. Aydınlanma Çağı'nın gerçek kurucusu olarak kabul edilir."
+    },
+    {
+        name: "Ludwig van Beethoven",
+        lat: 50.7374, // Bonn, Almanya
+        lng: 7.0877,
+        wiki: "Ludwig_van_Beethoven",
+        yasam: "1770–1827",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Klasik müzik döneminden Romantik döneme geçiş sürecine büyük katkı sağlamış en etkileyici bestecilerden biri olarak kabul edilen piyanist ve besteciydi."
+    },
+    {
+        name: "Werner Heisenberg",
+        lat: 48.1351, // Münih, Almanya
+        lng: 11.5820,
+        wiki: "Werner_Heisenberg",
+        yasam: "1901–1976",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Teorik fizikçiydi. En ünlü çalışması, kendi ismiyle anılan Belirsizlik İlkesi'dir."
+    },
+    {
+        name: "Louis Daguerre",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "Louis_Daguerre",
+        yasam: "1787–1851",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Sanatçı ve kimyagerdi. Dagerreyotipi adlı fotoğrafik görüntü elde etme yöntemini bulmuştur. Fotoğrafçılığın bir meslek ve sanat dalı olarak yayılmasını sağladı."
+    },
+    {
+        name: "Simón Bolívar",
+        lat: 10.5000, // Karakas, Venezuela
+        lng: -66.9167,
+        wiki: "Simón_Bolívar",
+        yasam: "1783–1830",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İspanyol",
+        hakkinda: "Devrim önderi, Büyük Kolombiya'nın kurucusu ve ilk devlet başkanıydı. Güney Amerika'da İspanyol İmparatorluğu'na karşı bağımsızlık hareketinin siyasi ve askerî lideri oldu."
+    },
+    {
+        name: "René Descartes",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "René_Descartes",
+        yasam: "1596–1650",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Filozof, matematikçi ve bilim insanıydı. Geometri ve cebir alanlarını birleştirerek analitik geometriyi icat etti. Modern felsefenin kurucularından biri olarak kabul edilir."
+    },
+    {
+        name: "Michelangelo",
+        lat: 43.7696, // Floransa/Roma, İtalya
+        lng: 11.2558,
+        wiki: "Michelangelo",
+        yasam: "1475–1564",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Rönesans dönemi ressamı, heykeltıraşı, mimarı ve şairiydi."
+    },
+          {
+        name: "II. Urbanus",
+        lat: 45.4642, // Roma/Clermont (Fransa - Haçlı Seferi Çağrısı)
+        lng: 9.1900,
+        wiki: "II._Urbanus",
+        yasam: "1042–1099",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Papa. 1095'te Clermont Konsili'nde yaptığı konuşmayla Birinci Haçlı Seferi'ni başlattı. Orta Çağ'da büyük bir etki yarattı."
+    },
+    {
+        name: "Hz. Ömer / Ömer bin Hattab",
+        lat: 24.5247, // Medine (Hilafet Merkezi)
+        lng: 39.5692,
+        wiki: "Ömer_bin_Hattab",
+        yasam: "y. 583–644",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Arap",
+        hakkinda: "İslam'ın ikinci halifesi. Halifeliği döneminde İslam İmparatorluğu'nu hızla genişleterek Orta Doğu'da büyük bir siyasi güç haline getirdi."
+    },
+    {
+        name: "Asoka",
+        lat: 25.6120, // Patna, Hindistan (Mauryan İmparatorluğu'nun Başkenti)
+        lng: 85.1376,
+        wiki: "Asoka",
+        yasam: "MÖ 304–232",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Hint",
+        hakkinda: "Mauryan İmparatorluğu'nun en güçlü hükümdarlarından biriydi. Budizm'in Hindistan dışına yayılmasında kilit rol oynadı."
+    },
+    {
+        name: "Augustinus",
+        lat: 36.8065, // Hippo Regius (Annaba, Cezayir - Piskoposluk Yeri)
+        lng: 7.7247,
+        wiki: "Augustinus",
+        yasam: "354–430",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Berberi/Latin",
+        hakkinda: "Hristiyan teolog ve filozof. Batı felsefesi ve Hristiyanlık üzerindeki en etkili figürlerden biridir. Dönemin Batı Hristiyanlığı'nın teolojik temellerini attı."
+    },
+    {
+        name: "William Harvey",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "William_Harvey",
+        yasam: "1578–1657",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Hekim. Kanın kalpten başlayarak vücutta dolaşımını doğru bir şekilde açıklayan ilk kişidir. Modern fizyolojinin temellerini attı."
+    },
+    {
+        name: "Ernest Rutherford",
+        lat: 51.5074, // Londra/Cambridge (İngiltere - Çalışma Yeri)
+        lng: -0.1278,
+        wiki: "Ernest_Rutherford",
+        yasam: "1871–1937",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yeni Zelandalı",
+        hakkinda: "Fizikçi. Çekirdek atom teorisini geliştirdi ve atomun yapısını anlayışımızda devrim yarattı. Nükleer fiziğin babası olarak bilinir."
+    },
+    {
+        name: "Jean Calvin",
+        lat: 46.2044, // Cenevre, İsviçre (Ana Faaliyet Merkezi)
+        lng: 6.1432,
+        wiki: "Jean_Calvin",
+        yasam: "1509–1564",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Teolog ve reformcu. Protestan Reformu'nun ana figürlerinden biriydi ve Kalvinizm olarak bilinen Hristiyan teolojisi sistemini geliştirdi."
+    },
+    {
+        name: "Gregor Mendel",
+        lat: 49.1951, // Brno, Çek Cumhuriyeti (Çalışma Yeri)
+        lng: 16.6068,
+        wiki: "Gregor_Mendel",
+        yasam: "1822–1884",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Bilim insanı ve genetik biliminin kurucusu kabul edilir. Bezelye bitkileri üzerindeki çalışmalarıyla kalıtım yasalarını keşfetti."
+    },
+    {
+        name: "Max Planck",
+        lat: 52.5200, // Berlin, Almanya
+        lng: 13.4050,
+        wiki: "Max_Planck",
+        yasam: "1858–1947",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Fizikçi. Kuantum teorisini formüle ederek modern fiziğin devrimine öncülük etti. Kuantum mekaniğinin kurucularından biridir."
+    },
+    {
+        name: "Joseph Lister",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Joseph_Lister",
+        yasam: "1827–1912",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Cerrah. Karbolik asit (fenol) kullanarak antiseptik cerrahi tekniklerini başlattı. Modern cerrahi ve hijyenin temellerini attı."
+    },
+    {
+        name: "Nikolaus August Otto",
+        lat: 50.9375, // Köln, Almanya
+        lng: 6.9603,
+        wiki: "Nikolaus_Otto",
+        yasam: "1832–1891",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Mühendis. Dört zamanlı içten yanmalı motorun geliştirilmesindeki rolüyle bilinir. Bu motor, modern otomotivin temelini oluşturdu."
+    },
+    {
+        name: "Francisco Pizarro",
+        lat: -12.0464, // Lima, Peru (Fetih Bölgesi)
+        lng: -77.0428,
+        wiki: "Francisco_Pizarro",
+        yasam: "y. 1471–1541",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İspanyol",
+        hakkinda: "Kâşif ve fatih (konkistador). İnka İmparatorluğu'nu fethederek İspanyol sömürgeciliğinin Güney Amerika'ya yayılmasında büyük rol oynadı."
+    },
+    {
+        name: "Hernán Cortés",
+        lat: 19.4326, // Meksiko (Fetih Bölgesi)
+        lng: -99.1332,
+        wiki: "Hernán_Cortés",
+        yasam: "1485–1547",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İspanyol",
+        hakkinda: "Kâşif ve fatih. Aztek İmparatorluğu'nu yıkarak Meksika'nın İspanyollar tarafından sömürgeleştirilmesinde kilit rol oynadı."
+    },
+    {
+        name: "Thomas Jefferson",
+        lat: 38.8951, // Washington D.C., ABD
+        lng: -77.0369,
+        wiki: "Thomas_Jefferson",
+        yasam: "1743–1826",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "ABD'nin kurucu babası ve üçüncü başkanı. Bağımsızlık Bildirgesi'nin ana yazarı ve liberalizmin önemli figürlerindendir."
+    },
+    {
+        name: "Kastilyalı I. Isabella",
+        lat: 40.4168, // Madrid, İspanya
+        lng: -3.7038,
+        wiki: "Kastilyalı_I._Isabella",
+        yasam: "1451–1504",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İspanyol",
+        hakkinda: "İspanya Kraliçesi. İspanya'nın birleşmesinde, Reconquista'nın tamamlanmasında ve Kristof Kolomb'un yolculuğunu destekleyerek Coğrafi Keşifler'de önemli rol oynadı."
+    },
+    {
+        name: "Josef Stalin",
+        lat: 55.7558, // Moskova, Rusya (SSCB Merkezi)
+        lng: 37.6173,
+        wiki: "Josef_Stalin",
+        yasam: "1878–1953",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Gürcü",
+        hakkinda: "Sovyetler Birliği Komünist Partisi'nin genel sekreteri ve SSCB'nin lideri. İkinci Dünya Savaşı'nda önemli rol oynadı ve ülkesini süper güç haline getirdi."
+    },
+    {
+        name: "Jül Sezar",
+        lat: 41.8902, // Roma, İtalya
+        lng: 12.4922,
+        wiki: "Jül_Sezar",
+        yasam: "MÖ 100–44",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Latin",
+        hakkinda: "Roma'nın general ve politikacısı. Roma Cumhuriyeti'nin sonu ve İmparatorluk döneminin başlangıcında kritik bir figürdür."
+    },
+    {
+        name: "I. William",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "I._William_(İngiltere_kralı)",
+        yasam: "y. 1028–1087",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Norman",
+        hakkinda: "Normandiya Dükü ve İngiltere Kralı. 1066'da İngiltere'yi fethederek İngiliz tarihinde kalıcı bir etki bıraktı."
+    },
+    {
+        name: "Sigmund Freud",
+        lat: 48.2082, // Viyana, Avusturya
+        lng: 16.3738,
+        wiki: "Sigmund_Freud",
+        yasam: "1856–1939",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Nörolog ve psikanalizin kurucusu. İnsan zihni, bilinçaltı ve cinsellik konularındaki teorileriyle psikoloji ve Batı kültürü üzerinde derin bir etki yarattı."
+    },
+    {
+        name: "Edward Jenner",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Edward_Jenner",
+        yasam: "1749–1823",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Hekim. Çiçek hastalığına karşı ilk başarılı aşıyı geliştirdi ve aşılamanın temelini attı. İmmünolojinin babası olarak anılır."
+    },
+    {
+        name: "Wilhelm Röntgen",
+        lat: 50.9375, // Würzburg/Münih, Almanya
+        lng: 6.9603,
+        wiki: "Wilhelm_Röntgen",
+        yasam: "1845–1923",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Fizikçi. X ışınlarını (Röntgen ışınları) keşfetti. Bu keşif, tıp ve bilim alanlarında devrim yarattı ve ilk Nobel Fizik Ödülü'nü kazandı."
+    },
+    {
+        name: "Johann Sebastian Bach",
+        lat: 51.3397, // Leipzig, Almanya (Ana Çalışma Yeri)
+        lng: 12.3731,
+        wiki: "Johann_Sebastian_Bach",
+        yasam: "1685–1750",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Besteci. Barok dönemin en önemli bestecilerinden biri olarak kabul edilir. Müzik tarihi ve teorisi üzerinde kalıcı bir etkiye sahiptir."
+    },
+    {
+        name: "Lao Tzu",
+        lat: 34.7465, // Çin (Tahmini merkez)
+        lng: 113.6703,
+        wiki: "Lao_Tzu",
+        yasam: "MÖ 6. yüzyıl",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Filozof. Taoizm'in kurucusu olarak kabul edilir. Düşünceleri, Çin kültürü ve felsefesi üzerinde derin bir iz bırakmıştır."
+    },
+    {
+        name: "Voltaire",
+        lat: 48.8566, // Paris, Fransa
+        lng: 2.3522,
+        wiki: "Voltaire",
+        yasam: "1694–1778",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Fransız",
+        hakkinda: "Aydınlanma dönemi yazarı, tarihçisi ve filozofu. Düşünce ve ifade özgürlüğü, dinin kiliseden ayrılması gibi konularda önemli rol oynadı."
+    },
+    {
+        name: "Johannes Kepler",
+        lat: 48.1351, // Prag/Linz (Çalışma Yeri)
+        lng: 11.5820,
+        wiki: "Johannes_Kepler",
+        yasam: "1571–1630",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Alman",
+        hakkinda: "Gökbilimci ve matematikçi. Gezegen hareketlerini açıklayan Kepler yasalarını formüle etti. Modern astronominin kurucularından biridir."
+    },
+    {
+        name: "Enrico Fermi",
+        lat: 41.8902, // Roma, İtalya
+        lng: 12.4922,
+        wiki: "Enrico_Fermi",
+        yasam: "1901–1954",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Fizikçi. İlk nükleer reaktörü geliştirdi ve kuantum teorisi, nükleer fizik ve istatistiksel mekanik alanlarında büyük katkılarda bulundu."
+    },
+    {
+        name: "Leonhard Euler",
+        lat: 59.9139, // St. Petersburg, Rusya (Çalışma Yeri)
+        lng: 30.3086,
+        wiki: "Leonhard_Euler",
+        yasam: "1707–1783",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İsviçreli",
+        hakkinda: "Matematikçi ve fizikçi. Tarihin en büyük matematikçilerinden biri kabul edilir. Kalkülüs, topoloji, grafik teorisi ve mekanik gibi birçok alana temel katkılar yaptı."
+    },
+    {
+        name: "Jean-Jacques Rousseau",
+        lat: 46.2044, // Cenevre, İsviçre
+        lng: 6.1432,
+        wiki: "Jean-Jacques_Rousseau",
+        yasam: "1712–1778",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Cenevreli (İsviçreli)",
+        hakkinda: "Filozof ve yazar. Aydınlanma Çağı'nın önemli figürü. Siyasi felsefesi, Fransız Devrimi ve modern siyasi ve eğitim düşüncesini etkiledi."
+    },
+    {
+        name: "Niccolò Machiavelli",
+        lat: 43.7696, // Floransa, İtalya
+        lng: 11.2558,
+        wiki: "Niccolò_Machiavelli",
+        yasam: "1469–1527",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İtalyan",
+        hakkinda: "Diplomat ve siyaset filozofu. Prens (Il Principe) eseriyle modern siyaset biliminin ve siyaset felsefesinin kurucularından biri olarak kabul edilir."
+    },
+    {
+        name: "Thomas Robert Malthus",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Thomas_Robert_Malthus",
+        yasam: "1766–1834",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Ekonomist ve demograf. Nüfusun geometrik, gıda üretiminin ise aritmetik olarak arttığı yönündeki Malthusçu nüfus teorisiyle tanınır."
+    },
+    {
+        name: "John F. Kennedy",
+        lat: 38.8951, // Washington D.C., ABD
+        lng: -77.0369,
+        wiki: "John_F._Kennedy",
+        yasam: "1917–1963",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İrlandalı/Amerikalı",
+        hakkinda: "ABD'nin 35. başkanı. Soğuk Savaş döneminde Küba Füze Krizi'ndeki liderliği ve Apollo programının başlatılmasıyla hatırlanır."
+    },
+    {
+        name: "Gregory G. Pincus",
+        lat: 42.3601, // Boston, Massachusetts, ABD
+        lng: -71.0589,
+        wiki: "Gregory_Goodwin_Pincus",
+        yasam: "1903–1967",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yahudi",
+        hakkinda: "Biyolog ve araştırmacı. Kombine oral kontraseptif hapın (doğum kontrol hapı) mucitlerinden biri olarak bilinir."
+    },
+    {
+        name: "Mani",
+        lat: 33.3333, // Babil (Irak)
+        lng: 44.3833,
+        wiki: "Mani",
+        yasam: "216–274",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Asuri/Arami",
+        hakkinda: "Peygamber ve din kurucusu. Kendi adıyla anılan ve bir zamanlar Akdeniz'den Çin'e kadar yayılmış olan Maniheizm dinini kurdu."
+    },
+    {
+        name: "Vladimir Lenin",
+        lat: 55.7558, // Moskova, Rusya (SSCB Merkezi)
+        lng: 37.6173,
+        wiki: "Vladimir_Lenin",
+        yasam: "1870–1924",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Rus",
+        hakkinda: "Devrimci, politikacı ve siyaset teorisyeni. Rusya Komünist Partisi'nin ve Sovyetler Birliği'nin kurucusu ve ilk lideriydi."
+    },
+    {
+        name: "Sui Wen",
+        lat: 34.2667, // Xi'an, Çin
+        lng: 108.9500,
+        wiki: "Wen_of_Sui",
+        yasam: "541–604",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Sui Hanedanlığı'nın kurucusu ve ilk imparatoru. Yüzlerce yıl süren parçalanmadan sonra Çin'i yeniden birleştirdi."
+    },
+    {
+        name: "Vasco da Gama",
+        lat: 38.7223, // Lizbon, Portekiz
+        lng: -9.1393,
+        wiki: "Vasco_da_Gama",
+        yasam: "y. 1460–1524",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Portekizli",
+        hakkinda: "Kâşif. Avrupa'dan Hindistan'a deniz yoluyla ulaşan ilk Avrupalı. Bu keşif, küresel ticaret yollarını ve sömürgeciliği kökten değiştirdi."
+    },
+    {
+        name: "Büyük Kiros",
+        lat: 30.0000, // Pasargad (İran)
+        lng: 53.0000,
+        wiki: "II._Kiros",
+        yasam: "MÖ 600–530",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Pers",
+        hakkinda: "Pers İmparatorluğu'nun (Ahameniş İmparatorluğu) kurucusu. Tarihin en büyük imparatorluklarından birini kurdu ve fethettiği halklara karşı hoşgörülü politikalarıyla tanındı."
+    },
+    {
+        name: "I. Petro",
+        lat: 59.9343, // St. Petersburg, Rusya
+        lng: 30.3351,
+        wiki: "I._Petro",
+        yasam: "1672–1725",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Rus",
+        hakkinda: "Rus Çarı. Ülkesini büyük ölçüde batılılaştırarak modern Rusya İmparatorluğu'nun temellerini attı ve Rusya'yı Avrupa'nın büyük güçlerinden biri haline getirdi."
+    },
+    {
+        name: "Mao Zedong",
+        lat: 39.9042, // Pekin, Çin
+        lng: 116.4074,
+        wiki: "Mao_Zedong",
+        yasam: "1893–1976",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Komünist devrimci ve Çin Halk Cumhuriyeti'nin kurucusu. Ülkesini tek partili sosyalist bir devlete dönüştürdü ve düşünceleri Maoizm olarak adlandırıldı."
+    },
+    {
+        name: "Francis Bacon",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "Francis_Bacon",
+        yasam: "1561–1626",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "Filozof ve devlet adamı. Bilimsel yöntemin (endüktif akıl yürütme) ve modern ampirizmin babası olarak kabul edilir. Bilimsel devrimin gelişiminde önemli bir rol oynadı."
+    },
+    {
+        name: "Henry Ford",
+        lat: 42.3314, // Detroit, Michigan, ABD
+        lng: -83.0458,
+        wiki: "Henry_Ford",
+        yasam: "1863–1947",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İrlandalı/Amerikalı",
+        hakkinda: "Mühendis ve sanayici. Seri üretim için montaj hattı tekniğini mükemmelleştirerek Ford Motor Company'yi kurdu ve otomobili kitleler için erişilebilir hale getirdi."
+    },
+    {
+        name: "Mensiyüs",
+        lat: 35.6068, // Shandong, Çin
+        lng: 116.9740,
+        wiki: "Mensiyüs",
+        yasam: "MÖ 372–289",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Çinli",
+        hakkinda: "Konfüçyüsçü filozof. Konfüçyüs'ten sonra en önemli Konfüçyüsçü olarak kabul edilir. İnsan doğasının iyi olduğu fikrini savundu."
+    },
+    {
+        name: "Zerdüşt",
+        lat: 32.5000, // Tahmini İran/Orta Asya
+        lng: 54.0000,
+        wiki: "Zerdüşt",
+        yasam: "MÖ 1500–1000",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Pers/Arî",
+        hakkinda: "Peygamber ve Zerdüştçülüğün kurucusu. İnsanlık tarihinde tek tanrılı inanç sistemlerinin ilk öncülerinden biri olarak kabul edilir."
+    },
+    {
+        name: "I. Elizabeth",
+        lat: 51.5074, // Londra, İngiltere
+        lng: -0.1278,
+        wiki: "I._Elizabeth",
+        yasam: "1533–1603",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "İngiliz",
+        hakkinda: "İngiltere ve İrlanda Kraliçesi. Saltanatı, İngiliz Rönesansı ve küresel güç olarak yükseliş dönemi olan 'Elizabeth Çağı' olarak bilinir."
+    },
+    {
+        name: "Mihail Gorbaçov",
+        lat: 55.7558, // Moskova, Rusya (SSCB Merkezi)
+        lng: 37.6173,
+        wiki: "Mihail_Gorbaçov",
+        yasam: "1931–2022",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Rus",
+        hakkinda: "Sovyetler Birliği'nin son lideri. Glasnost (açıklık) ve Perestroyka (yeniden yapılanma) politikalarıyla SSCB'nin dağılmasına yol açtı."
+    },
+    {
+        name: "Menes",
+        lat: 30.0444, // Kahire, Mısır (Memphis yakını)
+        lng: 31.2357,
+        wiki: "Menes",
+        yasam: "MÖ 32. yüzyıl",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Mısırlı",
+        hakkinda: "Firavun. Yukarı ve Aşağı Mısır'ı birleştirerek ilk Mısır Hanedanlığı'nı kurduğu ve ilk Mısır devletini oluşturduğu kabul edilir."
+    },
+    {
+        name: "Şarlman",
+        lat: 50.7753, // Aachen, Almanya (Merkez)
+        lng: 6.0839,
+        wiki: "Şarlman",
+        yasam: "742–814",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Frank",
+        hakkinda: "Frank Kralı ve Kutsal Roma İmparatoru. Batı ve Orta Avrupa'nın büyük bir bölümünü birleştirerek Orta Çağ'da büyük bir siyasi ve kültürel etki yarattı."
+    },
+    {
+        name: "Homeros",
+        lat: 38.4192, // İzmir (Tahmini yer)
+        lng: 27.1287,
+        wiki: "Homeros",
+        yasam: "MÖ 8. yüzyıl",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Yunan",
+        hakkinda: "Şair. İlyada ve Odysseia destanlarının yazarı olduğu varsayılır. Batı edebiyatının temelini atan en önemli figürlerden biridir."
+    },
+    {
+        name: "I. Justinianus",
+        lat: 41.0082, // İstanbul, Türkiye (Konstantinopolis)
+        lng: 28.9784,
+        wiki: "I._Justinianus",
+        yasam: "482–565",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Latin/İllyr",
+        hakkinda: "Doğu Roma (Bizans) İmparatoru. Roma İmparatorluğu'nun eski topraklarını geri alma çabaları ve Roma hukukunu derleyen 'Corpus Juris Civilis' adlı eseriyle tanınır."
+    },
+    {
+        name: "Mahavira",
+        lat: 26.5458, // Bihar, Hindistan
+        lng: 85.5033,
+        wiki: "Mahavira",
+        yasam: "MÖ 599–527",
+        resim: "[Resim URL'si Ekle]",
+        etnisite: "Hint",
+        hakkinda: "Öğretmen. Jainizm'in en önemli manevi figürüdür. Şiddetsizlik (Ahimsa), doğruluk ve çilecilik ilkelerini öğretti."
+    },
+        ];
+
+        const map = L.map('map').setView([20, 0], 3);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap katkıcıları'
+        }).addTo(map);
+
+        const personSelect = document.getElementById('personSelect');
+        const wikiTitle = document.getElementById('wiki-title');
+        const wikiText = document.getElementById('wiki-text');
+        const wikiImg = document.getElementById('wiki-img');
+        const wikiLink = document.getElementById('wiki-link');
+
+        const iconDefault = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+
+        const iconActive = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+            shadowSize: [41, 41]
+        });
+
+        let markers = [];
+
+        // Dropdown'a numaralı kişi listesi ekle
+        insanlar.forEach((insan, i) => {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = `${i + 1} - ${insan.name}`;
+            personSelect.appendChild(option);
+        });
+
+        // Markerları oluştur ve numaralı tooltip ayarla
+        insanlar.forEach((insan, i) => {
+            const marker = L.marker([insan.lat, insan.lng], {icon: iconDefault}).addTo(map);
+            marker.bindTooltip(`${i + 1} - ${insan.name}`, {direction: 'top', offset: [0, -10]});
+            marker.on('click', () => {
+                showPerson(i);
+                setActiveMarker(i);
+                personSelect.value = i;
+                map.flyTo([insan.lat, insan.lng], 7);
+            });
+            markers.push(marker);
+        });
+
+        function setActiveMarker(activeIndex) {
+            markers.forEach((m, i) => {
+                m.setIcon(i === activeIndex ? iconActive : iconDefault);
+            });
+        }
+
+        async function showPerson(index) {
+            const insan = insanlar[index];
+            wikiTitle.textContent = insan.name;
+            wikiText.textContent = "Yükleniyor...";
+            wikiImg.style.display = "none";
+            wikiLink.style.display = "none";
+            try {
+                const response = await fetch(`https://tr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(insan.wiki)}`);
+                const data = await response.json();
+                wikiText.textContent = data.extract || insan.turningPoint || "Bilgi yok.";
+                if (data.thumbnail && data.thumbnail.source) {
+                    wikiImg.src = data.thumbnail.source;
+                    wikiImg.style.display = "block";
+                } else {
+                    wikiImg.style.display = "none";
+                }
+                wikiLink.href = data.content_urls?.desktop?.page || `https://tr.wikipedia.org/wiki/${encodeURIComponent(insan.wiki)}`;
+                wikiLink.style.display = "inline-block";
+            } catch {
+                wikiText.textContent = insan.turningPoint || "Bilgi yüklenemedi.";
+                wikiImg.style.display = "none";
+                wikiLink.href = `https://tr.wikipedia.org/wiki/${encodeURIComponent(insan.wiki)}`;
+                wikiLink.style.display = "inline-block";
+            }
+        }
+
+        personSelect.addEventListener('change', () => {
+            const idx = parseInt(personSelect.value);
+            if (!isNaN(idx)) {
+                showPerson(idx);
+                setActiveMarker(idx);
+                map.flyTo([insanlar[idx].lat, insanlar[idx].lng], 7);
+            } else {
+                wikiTitle.textContent = "Tarih Atlası";
+                wikiText.textContent = "Haritadan bir işaretçiye tıklayarak ya da listeden bir kişi seçerek detayları görebilirsiniz.";
+                wikiImg.style.display = "none";
+                wikiLink.style.display = "none";
+                markers.forEach(m => m.setIcon(iconDefault));
+                map.setView([20, 0], 3);
+            }
+        });
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
