@@ -1,0 +1,1 @@
+# Dunyayi-Etkiliyen-100-Insan-Atlasi
